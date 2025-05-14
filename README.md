@@ -139,5 +139,3 @@ src/
 | Rollout   | AWS Deployment            | 🔜 Planned |
 
 ---
-
-Would you like help generating the code base for **MTP 1**, or designing the class architecture?
