@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>1-on-1 WebSocket Chat</title>
+</head>
+<body>
+<h2>WebSocket Chat</h2>
+<p>Your ID will appear in server logs</p>
+<input type="text" id="targetId" placeholder="Enter target user ID" />
+<input type="text" id="message" placeholder="Enter your message" />
+<button onclick="sendMessage()">Send</button>
+
+<ul id="messages"></ul>
+
+<script>
+    const socket = new WebSocket("ws://localhost:8080/chat");
+
+    socket.onmessage = function(event) {
+      const li = document.createElement("li");
+      li.innerText = event.data;
+      document.getElementById("messages").appendChild(li);
+    };
+
+    function sendMessage() {
+      const target = document.getElementById("targetId").value;
+      const msg = document.getElementById("message").value;
+      socket.send(`${target}|${msg}`);
+    }
+</script>
+</body>
+</html>
