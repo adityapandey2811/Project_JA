@@ -2,30 +2,123 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>1-on-1 WebSocket Chat</title>
+    <title>WebSocket 1-on-1 Chat</title>
+    <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          background: #f4f4f4;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+        }
+
+        .chat-container {
+          width: 90%;
+          max-width: 500px;
+          background: #fff;
+          border-radius: 10px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .chat-header {
+          background: #4CAF50;
+          color: white;
+          padding: 15px;
+          text-align: center;
+          font-size: 1.2rem;
+        }
+
+        .chat-messages {
+          flex: 1;
+          padding: 15px;
+          overflow-y: auto;
+          border-top: 1px solid #eee;
+          border-bottom: 1px solid #eee;
+        }
+
+        .chat-messages ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .chat-messages li {
+          margin-bottom: 10px;
+          padding: 10px;
+          border-radius: 5px;
+          background: #f1f1f1;
+          max-width: 80%;
+        }
+
+        .chat-input {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding: 15px;
+          background: #fafafa;
+        }
+
+        .chat-input input {
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          font-size: 1rem;
+        }
+
+        .chat-input button {
+          padding: 10px;
+          background: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-size: 1rem;
+          cursor: pointer;
+        }
+
+        .chat-input button:hover {
+          background: #45a049;
+        }
+    </style>
 </head>
 <body>
-<h2>WebSocket Chat</h2>
-<p>Your ID will appear in server logs</p>
-<input type="text" id="targetId" placeholder="Enter target user ID" />
-<input type="text" id="message" placeholder="Enter your message" />
-<button onclick="sendMessage()">Send</button>
+<div class="chat-container">
+    <div class="chat-header">
+        🟢 WebSocket Chat
+    </div>
 
-<ul id="messages"></ul>
+    <div class="chat-messages">
+        <ul id="messages"></ul>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="targetId" placeholder="Target session ID (check logs)">
+        <input type="text" id="message" placeholder="Your message">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
 
 <script>
     const socket = new WebSocket("ws://localhost:8080/chat");
 
     socket.onmessage = function(event) {
       const li = document.createElement("li");
-      li.innerText = event.data;
+      li.textContent = event.data;
       document.getElementById("messages").appendChild(li);
+      document.querySelector(".chat-messages").scrollTop = document.querySelector(".chat-messages").scrollHeight;
     };
 
     function sendMessage() {
-      const target = document.getElementById("targetId").value;
-      const msg = document.getElementById("message").value;
+      const target = document.getElementById("targetId").value.trim();
+      const msg = document.getElementById("message").value.trim();
+      if (!target || !msg) return;
       socket.send(`${target}|${msg}`);
+      document.getElementById("message").value = "";
     }
 </script>
 </body>
