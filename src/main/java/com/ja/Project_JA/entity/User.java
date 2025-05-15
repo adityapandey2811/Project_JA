@@ -19,13 +19,10 @@ import java.util.List;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
+    private String userId;
     private String userName;
     private String userPassword;
-    private String userRole;
-    private String userStatus;
-    private String userImage;
+    private String userEmail;
     @OneToMany(mappedBy = "sender")
     private List<Message> sentMessages=new ArrayList<>();
 }
