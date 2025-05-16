@@ -7,6 +7,7 @@ import com.ja.Project_JA.config.JwtTokenProvider;
 import com.ja.Project_JA.dto.request.LoginRequest;
 import com.ja.Project_JA.dto.request.RegisterRequest;
 import com.ja.Project_JA.dto.response.AuthResponse;
+import com.ja.Project_JA.entity.USER_ROLE;
 import com.ja.Project_JA.entity.User;
 import com.ja.Project_JA.repository.UserRepository;
 import com.ja.Project_JA.service.CustomerUserDetailsService;
@@ -35,7 +36,8 @@ public class AuthController {
     private final JwtTokenProvider jwtProvider;
     private final CustomerUserDetailsService customerUserDetailsService;
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtProvider, CustomerUserDetailsService customerUserDetailsService) {
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                          JwtTokenProvider jwtProvider, CustomerUserDetailsService customerUserDetailsService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtProvider = jwtProvider;
@@ -44,54 +46,54 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> createUserHandler(@RequestBody RegisterRequest user) throws Exception {
-        System.out.println("sign up called");
         log.info("Received signup request for email: {}", user.getUserEmail());
-        User doesEmailExists = userRepository.findByUserEmail(user.getUserEmail());
-        if (doesEmailExists != null) {
+
+        if (userRepository.findByUserEmail(user.getUserEmail()) != null) {
             throw new Exception("Email is already used with another account");
         }
-        User createdUser = new User();
-        createdUser.setUserId(UUID.randomUUID().toString());        createdUser.setUserEmail(user.getUserEmail());
-        createdUser.setUserName(user.getUserName());
-        createdUser.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
 
-        User savedUser = userRepository.save(createdUser);
+        User createdUser = User.builder()
+                .userId(UUID.randomUUID().toString())
+                .userEmail(user.getUserEmail())
+                .userName(user.getUserName())
+                .userPassword(passwordEncoder.encode(user.getUserPassword()))
+                .userRole(user.getUserRole() != null ? user.getUserRole() : USER_ROLE.USER) // default to USER
+                .build();
 
-        Authentication authentication = new UsernamePasswordAuthenticationToken(user.getUserEmail(), user.getUserPassword());
+        userRepository.save(createdUser);
+
+        UserDetails userDetails = customerUserDetailsService.loadUserByUsername(user.getUserEmail());
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
         String jwt = jwtProvider.generateToken(authentication);
-        AuthResponse authResponse = new AuthResponse();
-        authResponse.setUserName(savedUser.getUserName());
-        authResponse.setJwt(jwt);
-        authResponse.setMessage("Registration successful");
-        return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
+
+        return new ResponseEntity<>(AuthResponse.builder()
+                .jwt(jwt)
+                .userName(createdUser.getUserName())
+                .message("Registration successful")
+                .build(), HttpStatus.CREATED);
     }
 
     @PostMapping("/signin")
     public ResponseEntity<AuthResponse> signin(@RequestBody LoginRequest req) {
-        String username = req.getEmail();
+        String email = req.getEmail();
         String password = req.getPassword();
-        Authentication authentication = authenticate(username, password);
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        String role = authorities.isEmpty() ? null : authorities.iterator().next().getAuthority();
+        Authentication authentication = authenticate(email, password);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwt = jwtProvider.generateToken(authentication);
-        AuthResponse authResponse = new AuthResponse();
-        authResponse.setJwt(jwt);
-        authResponse.setMessage("Signin successful");
-        authResponse.setUserName(username);
-        return new ResponseEntity<>(authResponse, HttpStatus.OK);
+
+        User user = userRepository.findByUserEmail(email); // to get the name
+
+        return new ResponseEntity<>(AuthResponse.builder()
+                .jwt(jwt)
+                .userName(user.getUserName())
+                .message("Signin successful")
+                .build(), HttpStatus.OK);
     }
 
-    /**
-     * Authenticates a user based on the provided username and password.
-     *
-     * @param username the username of the user attempting to authenticate
-     * @param password the password of the user attempting to authenticate
-     * @return an Authentication object if the username and password are valid
-     * @throws BadCredentialsException if the username is invalid or the password does not match
-     */
     private Authentication authenticate(String username, String password) {
         UserDetails userDetails = customerUserDetailsService.loadUserByUsername(username);
         if (userDetails == null) {

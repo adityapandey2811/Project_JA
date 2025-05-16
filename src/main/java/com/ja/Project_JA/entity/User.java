@@ -1,6 +1,5 @@
 package com.ja.Project_JA.entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,10 +18,21 @@ import java.util.List;
 public class User {
 
     @Id
+    @Column(nullable = false)
     private String userId;
+
+    @Column(nullable = false)
     private String userName;
+
+    @Column(nullable = false)
     private String userPassword;
+
+    @Column(unique = true, nullable = false)
     private String userEmail;
+
+    @Enumerated(EnumType.STRING)
+    private USER_ROLE userRole;
+
     @OneToMany(mappedBy = "sender")
-    private List<Message> sentMessages=new ArrayList<>();
+    private List<Message> sentMessages = new ArrayList<>();
 }
