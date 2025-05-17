@@ -77,8 +77,8 @@ public class AuthController {
 
     @PostMapping("/signin")
     public ResponseEntity<AuthResponse> signin(@RequestBody LoginRequest req) {
-        String email = req.getEmail();
-        String password = req.getPassword();
+        String email = req.getUserEmail();
+        String password = req.getUserPassword();
         Authentication authentication = authenticate(email, password);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -86,6 +86,7 @@ public class AuthController {
         String jwt = jwtProvider.generateToken(authentication);
 
         User user = userRepository.findByUserEmail(email); // to get the name
+
 
         return new ResponseEntity<>(AuthResponse.builder()
                 .jwt(jwt)
